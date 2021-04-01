@@ -90,32 +90,33 @@ def depthFirstSearch(problem):
     """
     "*** YOUR CODE HERE ***"
     stack = util.Stack()
-    route = {}
-    res = []
+    route = {} # goal state를 찾은 후 지나온 경로를 backtracking 하기 위한 dictionary
+    res = [] # goal state 까지의 경로 저장 배열
 
     start = problem.getStartState()
     backtrack = start
-    is_goal = problem.isGoalState(start)
+    is_goal = problem.isGoalState(start) # 시작 위치가 goal state인지 확인
 
-    stack.push((start, "Start", 0, -1))
+    stack.push((start, "", 0, -1)) # 시작 위치를 stack에 넣은 후 탐색 시작
+                                   # 스택에는 (다음 위치, 이동 방법, 이동 비용, 현재 위치)로 이루어진 tuple을 push
 
     while not (stack.isEmpty() or is_goal):
-        cur_state = stack.pop()
+        cur_state = stack.pop() # stack에서 pop 된 node를 현재 위치로 설정
 
-        if cur_state[0] in route:
+        if cur_state[0] in route: # 이미 방문한 node인 경우 expand를 하지 않음
             continue
 
-        route[cur_state[0]] = {"from": cur_state[3], "by": cur_state[1]}
+        route[cur_state[0]] = {"from": cur_state[3], "by": cur_state[1]} # 방문한 node라고 표시해주고 어디서 어떻게 왔는지 저장
 
-        is_goal = problem.isGoalState(cur_state[0])
+        is_goal = problem.isGoalState(cur_state[0]) # 현재 노드가 goal state인지 확인 후 그렇다면은 백트래킹을 위해 goal의 위치를 저장 후 탐색 종료
         if is_goal:
             backtrack = cur_state[0]
             break
 
-        for next_state in problem.getSuccessors(cur_state[0]):
+        for next_state in problem.getSuccessors(cur_state[0]): # 현재 위치에서 node expand 해서 다음으로 갈 수 있는 fringe들을 stack에 push
             stack.push(next_state + (cur_state[0], ))
 
-    while backtrack != start:
+    while backtrack != start: # route dictionary를 이용해 goal 위치에서 부터 시작 위치로 backtracking 하면서 res 배열에 경로 저장
         res.insert(0, route[backtrack]["by"])
         backtrack = route[backtrack]["from"]
 
@@ -126,32 +127,33 @@ def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
     queue = util.Queue()
-    route = {}
-    res = []
+    route = {} # goal state를 찾은 후 지나온 경로를 backtracking 하기 위한 dictionary
+    res = [] # goal state 까지의 경로 저장 배열
 
     start = problem.getStartState()
     backtrack = start
-    is_goal = problem.isGoalState(start)
+    is_goal = problem.isGoalState(start) # 시작 위치가 goal state인지 확인
 
-    queue.push((start, "Start", 0, -1))
+    queue.push((start, "", 0, -1)) # 시작 위치를 큐에 넣은 후 탐색 시작
+                                   # 큐에는 (다음 위치, 이동 방법, 이동 비용, 현재 위치)로 이루어진 tuple을 push
 
     while not (queue.isEmpty() or is_goal):
-        cur_state = queue.pop()
+        cur_state = queue.pop() # stack에서 pop 된 node를 현재 위치로 설정
 
-        if cur_state[0] in route:
+        if cur_state[0] in route: # 이미 방문한 node인 경우 expand를 하지 않음
             continue
 
-        route[cur_state[0]] = {"from": cur_state[3], "by": cur_state[1]}
+        route[cur_state[0]] = {"from": cur_state[3], "by": cur_state[1]} # 방문한 node라고 표시해주고 어디서 어떻게 왔는지 저장
 
-        is_goal = problem.isGoalState(cur_state[0])
+        is_goal = problem.isGoalState(cur_state[0]) # 현재 노드가 goal state인지 확인 후 그렇다면은 백트래킹을 위해 goal의 위치를 저장 후 탐색 종료
         if is_goal:
             backtrack = cur_state[0]
             break
 
-        for next_state in problem.getSuccessors(cur_state[0]):
+        for next_state in problem.getSuccessors(cur_state[0]): # 현재 위치에서 node expand 해서 다음으로 갈 수 있는 fringe들을 큐에 push
             queue.push(next_state + (cur_state[0], ))
 
-    while backtrack != start:
+    while backtrack != start: # route dictionary를 이용해 goal 위치에서 부터 시작 위치로 backtracking 하면서 res 배열에 경로 저장
         res.insert(0, route[backtrack]["by"])
         backtrack = route[backtrack]["from"]
 
@@ -162,33 +164,34 @@ def uniformCostSearch(problem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
     pq = util.PriorityQueue()
-    route = {}
-    res = []
+    route = {}  # goal state를 찾은 후 지나온 경로를 backtracking 하기 위한 dictionary
+    res = []  # goal state 까지의 경로 저장 배열
 
     start = problem.getStartState()
     backtrack = start
-    is_goal = problem.isGoalState(start)
+    is_goal = problem.isGoalState(start) # 시작 위치가 goal state인지 확인
 
-    pq.push((start, "Start", 0, -1), 0)
+    pq.push((start, "", 0, -1), 0) # 시작 위치를 우선순위 큐에 넣은 후 탐색 시작
+                                   # 우선순위 큐에는 (다음 위치, 이동 방법, 누적 비용, 현재 위치)로 이루어진 tuple이 들어가며 priority는 start로 부터 다음 위치까지 가는데 필요한 누적 비용으로 계산
 
     while not (pq.isEmpty() or is_goal):
-        cur_state = pq.pop()
+        cur_state = pq.pop() # 우선순위 큐에서 pop 된 노드를 현재 노드로 설정
 
-        if cur_state[0] in route:
+        if cur_state[0] in route: # 이미 방문한 노드인 경우 expand를 수행하지 않음
             continue
 
-        route[cur_state[0]] = {"from": cur_state[3], "by": cur_state[1]}
+        route[cur_state[0]] = {"from": cur_state[3], "by": cur_state[1]} # 방문한 노드라고 표시 후 어디서 어떻게 왔는지 저장
 
-        is_goal = problem.isGoalState(cur_state[0])
+        is_goal = problem.isGoalState(cur_state[0]) # 현재 노드가 goal state인지 확인 후 그렇다면은 backtracking을 위해 현재 노드 저장 후 탐색 종료
         if is_goal:
             backtrack = cur_state[0]
             break
 
-        for next_state in problem.getSuccessors(cur_state[0]):
-            accumulated_cost = cur_state[2] + next_state[2]
+        for next_state in problem.getSuccessors(cur_state[0]): # 현재 위치에서 node expand 해서 다음으로 갈 수 있는 fringe들을 우선순위 큐에 push
+            accumulated_cost = cur_state[2] + next_state[2] # 현재 노드까지 오는데 사용한 cost와 다음 노드로 이동하는데 필요한 cost를 더해서 다음 노드까지의 accumulated cost를 구함
             pq.push((next_state[0], next_state[1], accumulated_cost, cur_state[0]), accumulated_cost)
 
-    while backtrack != start:
+    while backtrack != start: # route dictionary를 이용해 goal 위치에서 부터 시작 위치로 backtracking 하면서 res 배열에 경로 저장
         res.insert(0, route[backtrack]["by"])
         backtrack = route[backtrack]["from"]
 
@@ -206,7 +209,41 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    pq = util.PriorityQueue()
+    route = {}  # goal state를 찾은 후 지나온 경로를 backtracking 하기 위한 dictionary
+    res = []  # goal state 까지의 경로 저장 배열
+
+    start = problem.getStartState()
+    backtrack = start
+    is_goal = problem.isGoalState(start) # 시작 위치가 goal state인지 확인
+    forward_cost = heuristic(start, problem) # priority 계산에 필요한 forward cost를 heuristic을 이용해 계산
+
+    pq.push((start, "", 0, -1), 0 + forward_cost) # 시작 위치를 우선순위 큐에 넣은 후 탐색 시작
+                                                  # 우선순위 큐에는 (다음 위치, 이동 방법, 누적 비용, 현재 위치)로 이루어진 tuple이 들어가며 priority는 backward cost와 forward cost를 더한 값으로 사용
+
+    while not (pq.isEmpty() or is_goal):
+        cur_state = pq.pop() # 우선순위 큐에서 pop한 값을 현재 노드로 설정
+
+        if (cur_state[0] in route): # 이미 방문한 노드라면 expand를 실행하지 않음
+            continue
+
+        route[cur_state[0]] = {"from": cur_state[3], "by": cur_state[1]} # 방문한 노드로 표시 후 어디서 어떻게 왔는지 저장
+
+        is_goal = problem.isGoalState(cur_state[0]) # 현재 노드가 goal state인지 확인후, 그렇다면 백트래킹을 위해 goal state의 위치를 저장 후 탐색 종료
+        if is_goal:
+            backtrack = cur_state[0]
+            break
+
+        for next_state in problem.getSuccessors(cur_state[0]): # 현재 위치에서 node expand 해서 다음으로 갈 수 있는 fringe들을 우선순위 큐에 push
+            backward_cost = cur_state[2] + next_state[2] # backward cost는 현재 노드까지 오는데 사용한 비용과 다음 노드로 이동하는데 필요한 비용을 더해서 구한다
+            forward_cost = heuristic(next_state[0], problem) # forward cost는 heuristic을 이용해 다음 노드에서 골 노드까지의 거리를 이용해서 구한다
+            pq.push((next_state[0], next_state[1], backward_cost, cur_state[0]), backward_cost + forward_cost)
+
+    while backtrack != start: # route dictionary를 이용해 goal 위치에서 부터 시작 위치로 backtracking 하면서 res 배열에 경로 저장
+        res.insert(0, route[backtrack]["by"])
+        backtrack = route[backtrack]["from"]
+
+    return res
 
 
 # Abbreviations

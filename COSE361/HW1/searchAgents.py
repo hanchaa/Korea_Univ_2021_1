@@ -258,7 +258,9 @@ def manhattanHeuristic(position, problem, info={}):
 
 def myHeuristic(position, problem, info={}):
     "You build your own heuristic function here"
-    util.raiseNotDefined()
+    xy1 = position
+    xy2 = problem.goal
+    return max(abs(xy1[0] - xy2[0]), abs(xy1[1] - xy2[1]))
 
 def euclideanHeuristic(position, problem, info={}):
     "The Euclidean distance heuristic for a PositionSearchProblem"
