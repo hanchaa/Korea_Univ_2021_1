@@ -18,11 +18,7 @@ Queue q;
 
 SYSCALL_DEFINE1(oslab_enqueue, int, a) {
     Node *i = q.front; // loop에서 사용할 변수
-
-    if (temp == NULL) {
-        printk(KERN_INFO "[Error] - QUEUE IS FULL--------------------\n");
-        return -2;
-    } // 메모리가 남아있지 않다면 큐가 꽉 찼다고 출력하며 함수 종료
+    Node *temp = NULL; // 새로 추가할 데이터를 가지고 있는 노드를 임시로 저장할 변수
 
     while (i != NULL) {
         if (i->data == a) {
@@ -34,7 +30,13 @@ SYSCALL_DEFINE1(oslab_enqueue, int, a) {
 
     printk(KERN_INFO "[System call] oslab_enqueue(); -----\n");
 
-    Node *temp = (Node *)kmalloc(sizeof(Node), GFP_KERNEL); // malloc을 통해서 새로 추가할 데이터를 담은 노드를 생성
+    temp = (Node *)kmalloc(sizeof(Node), GFP_KERNEL); // malloc을 통해서 새로 추가할 데이터를 담을 노드를 생성
+
+    if (temp == NULL) {
+        printk(KERN_INFO "[Error] - QUEUE IS FULL--------------------\n");
+        return -2;
+    } // 메모리가 남아있지 않다면 큐가 꽉 찼다고 출력하며 함수 종료
+
     temp->data = a;
     temp->next = NULL;
 
