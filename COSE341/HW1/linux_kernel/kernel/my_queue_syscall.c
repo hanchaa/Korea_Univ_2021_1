@@ -3,95 +3,69 @@
 #include <linux/linkage.h>
 #include <linux/slab.h>
 
-typedef struct queue_node {
-    int data;
-    struct queue_node *next;
-} Node; // Å¥ÀÇ ³ëµå·Î »ç¿ëµÇ´Â ±¸Á¶Ã¼
+#define MAX_QUEUE 500
 
-typedef struct queue {
-    Node *front; // Å¥ÀÇ Ã¹¹øÂ° ³ëµå¸¦ °¡¸£Å°´Â Æ÷ÀÎÅÍ
-    Node *rear; // Å¥ÀÇ ¸¶Áö¸· ³ëµå¸¦ °¡¸£Å°´Â Æ÷ÀÎÅÍ
-    int size; // Å¥¿¡ ÇöÀç µé¾îÀÖ´Â ³ëµåÀÇ °³¼ö¸¦ ³ªÅ¸³»´Â º¯¼ö
-} Queue; // Å¥ÀÇ Á¤º¸¸¦ °¡Áö°í ÀÖ´Â ±¸Á¶Ã¼
+int queue[MAX_QUEUE]; // queueë¡œ ì‚¬ìš©í•  ì •ìˆ˜ ë°°ì—´
+int front = 0; // queueì˜ front index
+int rear = 0; // queueì˜ rear index
 
-Queue q;
+// enqueueë¥¼ ìˆ˜í–‰í•˜ëŠ” ì‹œìŠ¤í…œ ì½œ í•¨ìˆ˜, ì •ìˆ˜ ë³€ìˆ˜ í•˜ë‚˜ë¥¼ ì¸ìë¡œ ê°€ì§
+SYSCALL_DEFINE1(oslab_enqueue, int, data) {
+    int i = 0; // ë°˜ë³µë¬¸ì—ì„œ ì‚¬ìš©í•  ë³€ìˆ˜
 
-SYSCALL_DEFINE1(oslab_enqueue, int, a) {
-    Node *i = q.front; // loop¿¡¼­ »ç¿ëÇÒ º¯¼ö
-    Node *temp = NULL; // »õ·Î Ãß°¡ÇÒ µ¥ÀÌÅÍ¸¦ °¡Áö°í ÀÖ´Â ³ëµå¸¦ ÀÓ½Ã·Î ÀúÀåÇÒ º¯¼ö
+    if (rear >= MAX_QUEUE) {
+        printk(KERN_INFO "[Error] - QUEUE IS FULL--------------------\n");
+        return -2;
+    } // queueê°€ ê½‰ ì°¼ìœ¼ë©´ íê°€ ê½‰ ì°¼ë‹¤ê³  ì—ëŸ¬ë¥¼ ì¶œë ¥í•˜ê³  -2ë¥¼ ë°˜í™˜
 
-    while (i != NULL) {
-        if (i->data == a) {
-            printk(KERN_INFO "[Error] - Duplicate integer in queue--------------------\n");
-            return -2;
+    for (i = front; i < rear; i++) {
+        if (queue[i] == data) {
+            printk(KERN_INFO "[Error] - Already existing value\n");
+            return data;
         }
-        i = i->next;
-    } // Å¥ÀÇ Ã¹ ¹øÂ° ³ëµåºÎÅÍ ¸¶Áö¸· ³ëµå±îÁö Áö³ª°¡¸é¼­ Áßº¹µÈ µ¥ÀÌÅÍ°¡ ÀÖ´ÂÁö È®ÀÎ
+    } // queueì˜ ì²˜ìŒë¶€í„° ë§ˆì§€ë§‰ê¹Œì§€ ì§€ë‚˜ê°€ë©´ì„œ enqueueí•˜ë ¤ëŠ” ê°’ê³¼ ì¤‘ë³µë˜ëŠ” ê°’ì´ ì—†ëŠ”ì§€ í™•ì¸
 
     printk(KERN_INFO "[System call] oslab_enqueue(); -----\n");
 
-    temp = (Node *)kmalloc(sizeof(Node), GFP_KERNEL); // mallocÀ» ÅëÇØ¼­ »õ·Î Ãß°¡ÇÒ µ¥ÀÌÅÍ¸¦ ´ãÀ» ³ëµå¸¦ »ı¼º
-
-    if (temp == NULL) {
-        printk(KERN_INFO "[Error] - QUEUE IS FULL--------------------\n");
-        return -2;
-    } // ¸Ş¸ğ¸®°¡ ³²¾ÆÀÖÁö ¾Ê´Ù¸é Å¥°¡ ²Ë Ã¡´Ù°í Ãâ·ÂÇÏ¸ç ÇÔ¼ö Á¾·á
-
-    temp->data = a;
-    temp->next = NULL;
-
-    if (q.size == 0) { // Å¥°¡ ºñ¾îÀÖ´Ù¸é ÇÁ·ĞÆ®¿Í ¸®¾î ³ëµå¸¦ ¸ğµÎ »õ ³ëµå·Î ÇÒ´ç
-        q.front = q.rear = temp;
-    }
-    else { // Å¥ÀÇ ¸¶Áö¸· ³ëµåÀÇ ´ÙÀ½ ³ëµå·Î »õ ³ëµå ÇÒ´ç / Å¥ÀÇ ¸®¾î ³ëµå¸¦ »õ ³ëµå·Î º¯°æ
-        (q.rear)->next = temp;
-        q.rear = temp;
-    }
-
-    q.size += 1;
+    queue[rear++] = data; // queueì˜ rearì— ìƒˆë¡œìš´ ê°’ì„ ì¶”ê°€í•˜ê³  rear indexë¥¼ +1
 
     printk(KERN_INFO "Queue Front--------------------\n");
 
-    i = q.front;
-
-    while (i != NULL) {
-        printk(KERN_INFO "%d\n", i->data);
-        i = i->next;
-    }
+    for (i = front; i < rear; i++)
+        printk(KERN_INFO "%d\n", queue[i]);
 
     printk(KERN_INFO "Queue Rear--------------------\n");
 
-    return a;
+    return data;
 }
 
+// dequeueë¥¼ ìˆ˜í–‰í•˜ëŠ” ì‹œìŠ¤í…œ ì½œ í•¨ìˆ˜
 SYSCALL_DEFINE0(oslab_dequeue) {
-    Node *i = NULL; // loop¿¡ »ç¿ëµÉ º¯¼ö
-    Node *temp = NULL; // pop µÇ´Â ³ëµå¸¦ ÀÓ½Ã·Î ÀúÀåÇÒ º¯¼ö
-    int res = 0; // pop µÇ´Â °ªÀ» ÀúÀåÇÒ º¯¼ö
+    int i = 0; // ë°˜ë³µë¬¸ì—ì„œ ì‚¬ìš©í•  ë³€ìˆ˜
+    int result = 0; // dequeue ëœ ê°’
 
-    if (q.size == 0) { // Å¥°¡ ºñ¾îÀÖ´Ù¸é ºñ¾ú´Ù°í Ãâ·Â ÈÄ ÇÔ¼ö Á¾·á
+    if (front == rear) { // íê°€ ë¹„ì–´ìˆë‹¤ë©´ ë¹„ì—ˆë‹¤ê³  ì¶œë ¥ í›„ í•¨ìˆ˜ ì¢…ë£Œ
         printk(KERN_INFO "[Error] - EMPTY QUEUE--------------------\n");
         return -2;
     }
 
     printk(KERN_INFO "[System call] oslab_dequeue(); -----\n");
 
-    temp = q.front;
-    res = temp->data;
-    q.front = temp->next;
-    q.size -= 1;
-    kfree(temp);
-    // Å¥ÀÇ ÇÁ·ĞÆ® ³ëµå¸¦ pop ÈÄ res¿¡ pop µÈ ³ëµåÀÇ data¸¦ ¿Å±â°í Å¥ÀÇ ÇÁ·ĞÆ® ³ëµå´Â pop µÈ ³ëµåÀÇ ´ÙÀ½ ³ëµå·Î º¯°æ, Å¥¿¡ µé¾îÀÖ´Â ³ëµå °³¼ö °¨¼Ò, pop µÈ ³ëµå´Â ¸Ş¸ğ¸® ÇÒ´ç ÇØÁ¦
+    result = queue[front++]; // queueì˜ frontì—ì„œ ê°’ì„ dequeueí•œ í›„ front index +1
+
+    for (i = front; i < rear; i++) {
+        queue[i - front] = queue[i]; // dequeue í›„ ë°°ì—´ ì• ë¶€ë¶„ì´ ë¹„ì–´ì„œ ì‚¬ìš© ëª»í•˜ëŠ” ê²ƒì„ ë§‰ê¸° ìœ„í•´ ê°’ì„ í•œ ì¹¸ì”© ì˜®ê²¨ ì¤Œ
+    }
+
+    rear -= front;
+    front = 0;
 
     printk(KERN_INFO "Queue Front--------------------\n");
 
-    i = q.front;
-    while (i != NULL) {
-        printk(KERN_INFO "%d\n", i->data);
-        i = i->next;
-    }
+    for (i = front; i < rear; i++)
+        printk(KERN_INFO "%d\n", queue[i]);
 
     printk(KERN_INFO "Queue Rear--------------------\n");
 
-    return res;
+    return result;
 }
