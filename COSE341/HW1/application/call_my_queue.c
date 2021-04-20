@@ -13,6 +13,8 @@ int main() {
     printf("Enqueue: %d\n", res);
     res = syscall(my_queue_enqueue, 3);
     printf("Enqueue: %d\n", res);
+    res = syscall(my_queue_enqueue, 3);
+    printf("Enqueue: %d\n", res);
 
     res = syscall(my_queue_dequeue);
     printf("Dequeue: %d\n", res);
