@@ -131,3 +131,5 @@ dmypy.json
 *.ini
 
 COSE361/.idea/
+
+.vscode/
