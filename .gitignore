@@ -129,7 +129,5 @@ dmypy.json
 .pyre/
 
 *.ini
-
-COSE361/.idea/
-
-.vscode/
+**/.idea/
+**/.vscode/
