@@ -84,7 +84,7 @@ class ReflexAgent(Agent):
             return -2e9
 
         if successorGameState.getScore() >= currentGameState.getScore():
-            return 0
+            return 2e9
 
         smallestDistanceToFood = 2e9
         for food in newFood.asList():
