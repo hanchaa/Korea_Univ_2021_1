@@ -30,6 +30,48 @@ class MyAgent(Agent):
     """
     Implementation of your agent.
     """
+    currentGoals = [dict()]
+
+    def ucs(self, gameState):
+        if self.prevAction == "Stop":
+            return ["Stop"]
+
+        problem = AnyFoodSearchProblem(gameState, self.index)
+        pq = util.PriorityQueue()
+        visited = dict()
+
+        if problem.getStartState() in self.currentGoals[0]:
+            del self.currentGoals[0][problem.getStartState()]
+
+        curState = [problem.getStartState(), [], 0]
+        pq.push(curState, 0)
+
+        while not pq.isEmpty():
+            curState = pq.pop()
+
+            if curState[0] in visited:
+                continue
+
+            visited[curState[0]] = True
+
+            if problem.isGoalState(curState[0]):
+                if curState[0] not in self.currentGoals[0] or self.currentGoals[0][curState[0]][0] == self.index:
+                    self.currentGoals[0][curState[0]] = (self.index, curState[2])
+
+                elif self.currentGoals[0][curState[0]][0] != self.index:
+                    if curState[2] < self.currentGoals[0][curState[0]][1]:
+                        self.currentGoals[0][curState[0]] = (self.index, curState[2])
+                    else:
+                        continue
+
+                return curState[1]
+
+            for nextState in problem.getSuccessors(curState[0]):
+                route = curState[1].copy()
+                route.append(nextState[1])
+                pq.push([nextState[0], route, curState[2] + nextState[2]], curState[2] + nextState[2])
+
+        return ["Stop"]
 
     def getAction(self, state):
         """
@@ -38,18 +80,12 @@ class MyAgent(Agent):
 
         "*** YOUR CODE HERE ***"
 
-        raise NotImplementedError()
+        self.prevAction = self.ucs(state)[0]
+        return self.prevAction
+
 
     def initialize(self):
-        """
-        Intialize anything you want to here. This function is called
-        when the agent is first created. If you don't need to use it, then
-        leave it blank
-        """
-
-        "*** YOUR CODE HERE"
-
-        raise NotImplementedError()
+        self.prevAction = ""
 
 """
 Put any other SearchProblems or search methods below. You may also import classes/methods in
