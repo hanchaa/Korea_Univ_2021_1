@@ -33,9 +33,9 @@ class MyAgent(Agent):
     currentGoals = [dict()]
     isGoalSet = [dict()]
 
-    def ucs(self, gameState):
+    def bfs(self, gameState):
         problem = AnyFoodSearchProblem(gameState, self.index)
-        pq = util.PriorityQueue()
+        queue = util.Queue()
         visited = dict()
 
         if problem.getStartState() in self.currentGoals[0]:
@@ -43,15 +43,11 @@ class MyAgent(Agent):
             self.isGoalSet[0][self.index] = False
 
         curState = [problem.getStartState(), [], 0]
-        pq.push(curState, 0)
+        queue.push(curState)
+        visited[curState[0]] = True
 
-        while not pq.isEmpty():
-            curState = pq.pop()
-
-            if curState[0] in visited:
-                continue
-
-            visited[curState[0]] = True
+        while not queue.isEmpty():
+            curState = queue.pop()
 
             if problem.isGoalState(curState[0]):
                 if curState[0] not in self.currentGoals[0] or self.currentGoals[0][curState[0]][0] == self.index:
@@ -68,9 +64,11 @@ class MyAgent(Agent):
                 return curState[1]
 
             for nextState in problem.getSuccessors(curState[0]):
-                route = curState[1].copy()
-                route.append(nextState[1])
-                pq.push([nextState[0], route, curState[2] + nextState[2]], curState[2] + nextState[2])
+                if nextState[0] not in visited:
+                    route = curState[1].copy()
+                    route.append(nextState[1])
+                    queue.push([nextState[0], route, curState[2] + nextState[2]])
+                    visited[nextState[0]] = True
 
         return ["Stop"]
 
@@ -86,7 +84,7 @@ class MyAgent(Agent):
         if self.isGoalSet[0][self.index] and len(self.savedRoute) > 0:
             return self.savedRoute.pop()
 
-        self.savedRoute = self.ucs(state)
+        self.savedRoute = self.bfs(state)
         self.savedRoute.reverse()
         action = self.savedRoute.pop()
 
