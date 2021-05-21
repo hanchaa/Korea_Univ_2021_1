@@ -457,6 +457,8 @@ struct sched_entity {
 	u64				vruntime;
 	u64				prev_sum_exec_runtime;
 
+	u64				delta_vruntime;
+
 	u64				nr_migrations;
 
 	struct sched_statistics		statistics;
@@ -637,6 +639,8 @@ struct task_struct {
 	int				static_prio;
 	int				normal_prio;
 	unsigned int			rt_priority;
+
+	int				cnt;
 
 	const struct sched_class	*sched_class;
 	struct sched_entity		se;

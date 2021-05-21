@@ -210,6 +210,13 @@ static inline void sched_info_depart(struct rq *rq, struct task_struct *t)
 {
 	unsigned long long delta = rq_clock(rq) - t->sched_info.last_arrival;
 
+	t->cnt += 1;
+
+	if (t->cnt == 1000) {
+		printk("tgid, %d, delta_vrun, %llu, delta_rrun, %llu, prio, %d\n", t->tgid, t->se.delta_vruntime, delta, t->prio);
+		t->cnt = 0;
+	}
+
 	rq_sched_info_depart(rq, delta);
 
 	if (t->state == TASK_RUNNING)

@@ -804,6 +804,7 @@ static void update_curr(struct cfs_rq *cfs_rq)
 	struct sched_entity *curr = cfs_rq->curr;
 	u64 now = rq_clock_task(rq_of(cfs_rq));
 	u64 delta_exec;
+	u64 delta_vruntime;
 
 	if (unlikely(!curr))
 		return;
@@ -820,7 +821,9 @@ static void update_curr(struct cfs_rq *cfs_rq)
 	curr->sum_exec_runtime += delta_exec;
 	schedstat_add(cfs_rq->exec_clock, delta_exec);
 
-	curr->vruntime += calc_delta_fair(delta_exec, curr);
+	delta_vruntime = calc_delta_fair(delta_exec, curr);
+	curr->vruntime += delta_vruntime;
+	curr->delta_vruntime = delta_vruntime;
 	update_min_vruntime(cfs_rq);
 
 	if (entity_is_task(curr)) {
