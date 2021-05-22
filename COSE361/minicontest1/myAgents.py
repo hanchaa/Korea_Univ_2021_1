@@ -30,17 +30,12 @@ class MyAgent(Agent):
     """
     Implementation of your agent.
     """
-    currentGoals = dict()
-    isGoalSet = dict()
+    currentGoals = dict()  # 어떤 food가 어떤 agent에 의해 목표로 설정되어 있는지를 저장하는 static variable
+    isGoalSet = dict()  # 어떤 agent의 목표 food가 설정되어 있는지 T/F를 저장하는 static variable
 
-    def bfs(self, gameState):
-        problem = AnyFoodSearchProblem(gameState, self.index)
+    def bfs(self, problem):
         queue = util.Queue()
         visited = dict()
-
-        if problem.getStartState() in self.currentGoals:
-            del self.currentGoals[problem.getStartState()]
-            self.isGoalSet[self.index] = False
 
         curState = [problem.getStartState(), [], 0]
         queue.push(curState)
@@ -50,18 +45,17 @@ class MyAgent(Agent):
             curState = queue.pop()
 
             if problem.isGoalState(curState[0]):
-                if curState[0] not in self.currentGoals or self.currentGoals[curState[0]][0] == self.index:
-                    self.currentGoals[curState[0]] = (self.index, curState[2])
+                if curState[0] not in self.currentGoals:  # search를 통해 찾아낸 가장 가까운 food가 다른 agent에 의해 목표로 설정되어 있지 않다면 현재 agent의 목표로 설정
+                    self.currentGoals[curState[0]] = [self.index, curState[2]]  # [index, search를 통해 구한 현재 위치에서 food까지의 거리]를 저장
                     self.isGoalSet[self.index] = True
+                    return curState[1]
 
-                elif self.currentGoals[curState[0]][0] != self.index:
-                    if curState[2] - self.currentGoals[curState[0]][1] < -8:
+                elif self.currentGoals[curState[0]][0] != self.index:  # search를 통해 찾아낸 가장 가까운 food가 다른 agent의 목표로 설정되어 있는 경우
+                    if curState[2] - self.currentGoals[curState[0]][1] < -5:  # 이 food를 목표로 설정한 agent에서 food까지의 거리 - 현재 agent에서 food까지의 거리 > 5라면 현재 agent의 목표 food로 변경
                         self.isGoalSet[self.currentGoals[curState[0]][0]] = False
-                        self.currentGoals[curState[0]] = (self.index, curState[2])
-                    else:
-                        continue
-
-                return curState[1]
+                        self.isGoalSet[self.index] = True
+                        self.currentGoals[curState[0]] = [self.index, curState[2]]
+                        return curState[1]
 
             for nextState in problem.getSuccessors(curState[0]):
                 if nextState[0] not in visited:
@@ -70,7 +64,7 @@ class MyAgent(Agent):
                     queue.push([nextState[0], route, curState[2] + nextState[2]])
                     visited[nextState[0]] = True
 
-        return ["Stop"]
+        return ["Stop"]  # 적당한 food를 찾지 못했다면은 멈춰서 이동 패널티를 받지 않게 함
 
     def getAction(self, state):
         """
@@ -78,21 +72,30 @@ class MyAgent(Agent):
         """
 
         "*** YOUR CODE HERE ***"
-        if self.isDone:
+        problem = AnyFoodSearchProblem(state, self.index)
+        pos = problem.getStartState()
+
+        if pos in self.currentGoals:  # 현재 위치가 어떤 agent에 의해 목표 된 곳이면 목표 목록에서 제거해준다
+            self.isGoalSet[self.currentGoals[pos][0]] = False
+            del self.currentGoals[pos]
+
+        if self.isDone:  # 남은 food가 다른 agent들에게 모두 할당 되고 남은게 없을 경우 이동하지 않음
             return "Stop"
 
-        if self.isGoalSet[self.index] and len(self.savedRoute) > 0:
-            return self.savedRoute.pop()
+        if self.isGoalSet[self.index] and len(self.savedRoute) > 0:  # 현재 에이전트의 목표가 있고 저장된 경로가 존재한다면 bfs를 하지 않고 저장된 경로를 이용
+            for i in self.currentGoals.keys():  # 목표 목록에 저장된 각 에이전트에서 목표까지 남은 거리 업데이트
+                if self.currentGoals[i][0] == self.index:
+                    self.currentGoals[i][1] -= 1
+                    break
+            return self.savedRoute.pop(0)
 
-        self.savedRoute = self.bfs(state)
-        self.savedRoute.reverse()
-        action = self.savedRoute.pop()
+        self.savedRoute = self.bfs(problem)
+        action = self.savedRoute.pop(0)
 
         if action == "Stop":
             self.isDone = True
 
         return action
-
 
     def initialize(self):
         self.isGoalSet[self.index] = False
