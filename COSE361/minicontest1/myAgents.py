@@ -30,17 +30,17 @@ class MyAgent(Agent):
     """
     Implementation of your agent.
     """
-    currentGoals = [dict()]
-    isGoalSet = [dict()]
+    currentGoals = dict()
+    isGoalSet = dict()
 
     def bfs(self, gameState):
         problem = AnyFoodSearchProblem(gameState, self.index)
         queue = util.Queue()
         visited = dict()
 
-        if problem.getStartState() in self.currentGoals[0]:
-            del self.currentGoals[0][problem.getStartState()]
-            self.isGoalSet[0][self.index] = False
+        if problem.getStartState() in self.currentGoals:
+            del self.currentGoals[problem.getStartState()]
+            self.isGoalSet[self.index] = False
 
         curState = [problem.getStartState(), [], 0]
         queue.push(curState)
@@ -50,14 +50,14 @@ class MyAgent(Agent):
             curState = queue.pop()
 
             if problem.isGoalState(curState[0]):
-                if curState[0] not in self.currentGoals[0] or self.currentGoals[0][curState[0]][0] == self.index:
-                    self.currentGoals[0][curState[0]] = (self.index, curState[2])
-                    self.isGoalSet[0][self.index] = True
+                if curState[0] not in self.currentGoals or self.currentGoals[curState[0]][0] == self.index:
+                    self.currentGoals[curState[0]] = (self.index, curState[2])
+                    self.isGoalSet[self.index] = True
 
-                elif self.currentGoals[0][curState[0]][0] != self.index:
-                    if curState[2] - self.currentGoals[0][curState[0]][1] < -8:
-                        self.isGoalSet[0][self.currentGoals[0][curState[0]][0]] = False
-                        self.currentGoals[0][curState[0]] = (self.index, curState[2])
+                elif self.currentGoals[curState[0]][0] != self.index:
+                    if curState[2] - self.currentGoals[curState[0]][1] < -8:
+                        self.isGoalSet[self.currentGoals[curState[0]][0]] = False
+                        self.currentGoals[curState[0]] = (self.index, curState[2])
                     else:
                         continue
 
@@ -81,7 +81,7 @@ class MyAgent(Agent):
         if self.isDone:
             return "Stop"
 
-        if self.isGoalSet[0][self.index] and len(self.savedRoute) > 0:
+        if self.isGoalSet[self.index] and len(self.savedRoute) > 0:
             return self.savedRoute.pop()
 
         self.savedRoute = self.bfs(state)
@@ -95,7 +95,7 @@ class MyAgent(Agent):
 
 
     def initialize(self):
-        self.isGoalSet[0][self.index] = False
+        self.isGoalSet[self.index] = False
         self.savedRoute = []
         self.isDone = False
 
