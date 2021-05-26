@@ -209,7 +209,8 @@ static inline void sched_info_queued(struct rq *rq, struct task_struct *t)
 static inline void sched_info_depart(struct rq *rq, struct task_struct *t)
 {
 	unsigned long long delta = rq_clock(rq) - t->sched_info.last_arrival;
-
+	
+	// #[2019320016] [Juhan Cha]
 	t->cnt += 1;
 
 	if (t->cnt == 1000) {
