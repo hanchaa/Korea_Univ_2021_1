@@ -805,8 +805,7 @@ static void update_curr(struct cfs_rq *cfs_rq)
 	u64 now = rq_clock_task(rq_of(cfs_rq));
 	u64 delta_exec;
 
-	// #[2019320016] [Juhan Cha]
-	u64 delta_vruntime;
+	u64 delta_vruntime; // #[2019320016] [Juhan Cha]
 
 	if (unlikely(!curr))
 		return;
@@ -823,10 +822,12 @@ static void update_curr(struct cfs_rq *cfs_rq)
 	curr->sum_exec_runtime += delta_exec;
 	schedstat_add(cfs_rq->exec_clock, delta_exec);
 
-	// #[2019320016] [Juhan Cha]
+	// #[2019320016] [Juhan Cha] Start
 	delta_vruntime = calc_delta_fair(delta_exec, curr);
 	curr->vruntime += delta_vruntime;
+	curr->delta_exec = delta_exec;
 	curr->delta_vruntime = delta_vruntime;
+	// Finish
 
 	update_min_vruntime(cfs_rq);
 

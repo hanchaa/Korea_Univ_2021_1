@@ -457,8 +457,10 @@ struct sched_entity {
 	u64				vruntime;
 	u64				prev_sum_exec_runtime;
 
-	// #[2019320016] [Juhan Cha]
+	// #[2019320016] [Juhan Cha] Start
+	u64				delta_exec;
 	u64				delta_vruntime;
+	// Finish
 
 	u64				nr_migrations;
 

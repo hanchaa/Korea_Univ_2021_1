@@ -210,13 +210,14 @@ static inline void sched_info_depart(struct rq *rq, struct task_struct *t)
 {
 	unsigned long long delta = rq_clock(rq) - t->sched_info.last_arrival;
 	
-	// #[2019320016] [Juhan Cha]
+	// #[2019320016] [Juhan Cha] Start
 	t->cnt += 1;
 
 	if (t->cnt == 1000) {
-		printk("tgid, %d, delta_vrun, %llu, delta_rrun, %llu, prio, %d\n", t->tgid, t->se.delta_vruntime, delta, t->prio);
+		printk("tgid, %d, delta_vrun, %llu, delta_rrun, %llu, prio, %d\n", t->tgid, t->se.delta_vruntime, t->se.delta_exec, t->prio);
 		t->cnt = 0;
 	}
+	// Finish
 
 	rq_sched_info_depart(rq, delta);
 
