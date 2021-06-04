@@ -17,13 +17,14 @@ import random, time, util
 from game import Directions
 import game
 
+
 #################
 # Team creation #
 #################
 
 def createTeam(firstIndex, secondIndex, isRed,
-               first = 'DummyAgent', second = 'DummyAgent'):
-  """
+               first='PlanningAgent', second='DefensiveReflexAgent'):
+    """
   This function should return a list of two agents that will form the
   team, initialized using firstIndex and secondIndex as their agent
   index numbers.  isRed is True if the red team is being created, and
@@ -38,147 +39,177 @@ def createTeam(firstIndex, secondIndex, isRed,
   behavior is what you want for the nightly contest.
   """
 
-  # The following line is an example only; feel free to change it.
-  return [eval(first)(firstIndex), eval(second)(secondIndex)]
+    # The following line is an example only; feel free to change it.
+    return [eval(first)(firstIndex), eval(second)(secondIndex)]
+
 
 ##########
 # Agents #
 ##########
 
-class DummyAgent(CaptureAgent):
-  """
-  A Dummy agent to serve as an example of the necessary agent structure.
-  You should look at baselineTeam.py for more details about how to
-  create an agent as this is the bare minimum.
-  """
+class PlanningAgent(CaptureAgent):
+    def registerInitialState(self, gameState):
+        self.start = gameState.getAgentPosition(self.index)
+        CaptureAgent.registerInitialState(self, gameState)
 
-  def registerInitialState(self, gameState):
-    """
-    This method handles the initial setup of the
-    agent to populate useful fields (such as what team
-    we're on).
+        # 자신의 팀 영역의 경계가 되는 X 좌표 계산
+        self.boundaryX = (gameState.data.layout.width - 2) // 2
 
-    A distanceCalculator instance caches the maze distances
-    between each pair of positions, so your agents can use:
-    self.distancer.getDistance(p1, p2)
+        if not self.red:
+            self.boundaryX += 1
 
-    IMPORTANT: This method may run for at most 15 seconds.
-    """
+        # 자신의 팀 영역의 경계가 되는 모든 좌표 계산
+        self.boundaries = []
+        for i in range(gameState.data.layout.height):
+            if not gameState.hasWall(self.boundaryX, i):
+                self.boundaries.append((self.boundaryX, i))
 
-    '''
-    Make sure you do not delete the following line. If you would like to
-    use Manhattan distances instead of maze distances in order to save
-    on initialization time, please take a look at
-    CaptureAgent.registerInitialState in captureAgents.py.
-    '''
-    CaptureAgent.registerInitialState(self, gameState)
+    def chooseAction(self, gameState):
+        actions = gameState.getLegalActions(self.index)
+        self.debugClear()
 
-    '''
-    Your initialization code goes here, if you need any.
-    '''
+        if gameState.getAgentState(self.index).numCarrying == 0:
+            values = [self.depthLimitedSearchToFood(gameState, action, 1) for action in actions if action != Directions.STOP]
+        else:
+            values = [self.depthLimitedSearchToHome(gameState, action, 1) for action in actions if action != Directions.STOP]
 
+        # 가장 큰 가치를 가진 액션들 중에서 랜덤하게 선택
+        maxValue = max(values)
+        bestActions = [action for action, value in zip(actions, values) if value == maxValue]
 
-  def chooseAction(self, gameState):
-    """
-    Picks among actions randomly.
-    """
-    actions = gameState.getLegalActions(self.index)
+        return random.choice(bestActions)
 
-    '''
-    You should change this in your own agent.
-    '''
+    def depthLimitedSearchToFood(self, gameState, action, depth):
+        successor = self.getSuccessor(gameState, action)
+        agentState = successor.getAgentState(self.index)
+        pos = agentState.getPosition()
 
-    return random.choice(actions)
+        foodList = self.getFood(successor).asList()
 
-# myTeam.py
-# ---------
-# Licensing Information:  You are free to use or extend these projects for
-# educational purposes provided that (1) you do not distribute or publish
-# solutions, (2) you retain this notice, and (3) you provide clear
-# attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
-# Attribution Information: The Pacman AI projects were developed at UC Berkeley.
-# The core projects and autograders were primarily created by John DeNero
-# (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
-# Student side autograding was added by Brad Miller, Nick Hay, and
-# Pieter Abbeel (pabbeel@cs.berkeley.edu).
+        if depth >= 4:
+            return -min([self.getMazeDistance(pos, food) for food in foodList])
 
+        if agentState.getPosition() == self.start:
+            return -9999
 
-from captureAgents import CaptureAgent
-import random, time, util
-from game import Directions
-import game
+        if agentState.isPacman:
+            enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
+            enemyDistance = min([self.getMazeDistance(agentState.getPosition(), enemy.getPosition()) for enemy in enemies if enemy.scaredTimer == 0], default=9999)
 
-#################
-# Team creation #
-#################
+            if enemyDistance <= depth:
+                return -9999
 
-def createTeam(firstIndex, secondIndex, isRed,
-               first = 'DummyAgent', second = 'DummyAgent'):
-  """
-  This function should return a list of two agents that will form the
-  team, initialized using firstIndex and secondIndex as their agent
-  index numbers.  isRed is True if the red team is being created, and
-  will be False if the blue team is being created.
+        if agentState.numCarrying > 0:
+            return 100
 
-  As a potentially helpful development aid, this function can take
-  additional string-valued keyword arguments ("first" and "second" are
-  such arguments in the case of this function), which will come from
-  the --redOpts and --blueOpts command-line arguments to capture.py.
-  For the nightly contest, however, your team will be created without
-  any extra arguments, so you should make sure that the default
-  behavior is what you want for the nightly contest.
-  """
+        actions = successor.getLegalActions(self.index)
+        return 0.9 * max([self.depthLimitedSearchToFood(successor, action, depth + 1) for action in actions])
 
-  # The following line is an example only; feel free to change it.
-  return [eval(first)(firstIndex), eval(second)(secondIndex)]
+    def depthLimitedSearchToHome(self, gameState, action, depth):
+        successor = self.getSuccessor(gameState, action)
+        agentState = successor.getAgentState(self.index)
+        pos = agentState.getPosition()
 
-##########
-# Agents #
-##########
+        if depth >= 4:
+            return -min([self.getMazeDistance(pos, boundary) for boundary in self.boundaries])
 
-class DummyAgent(CaptureAgent):
-  """
-  A Dummy agent to serve as an example of the necessary agent structure.
-  You should look at baselineTeam.py for more details about how to
-  create an agent as this is the bare minimum.
-  """
+        if not agentState.isPacman:
+            return 100
 
-  def registerInitialState(self, gameState):
-    """
-    This method handles the initial setup of the
-    agent to populate useful fields (such as what team
-    we're on).
+        enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
+        enemyDistance = min(
+            [self.getMazeDistance(agentState.getPosition(), enemy.getPosition()) for enemy in enemies])
 
-    A distanceCalculator instance caches the maze distances
-    between each pair of positions, so your agents can use:
-    self.distancer.getDistance(p1, p2)
+        if enemyDistance <= depth:
+            return -9999
 
-    IMPORTANT: This method may run for at most 15 seconds.
-    """
+        wallCount = 0
+        for i in [-1, 1]:
+            if successor.hasWall(int(pos[0] + i), int(pos[1])):
+                wallCount += 1
+            if successor.hasWall(int(pos[0]), int(pos[1] + i)):
+                wallCount += 1
 
-    '''
-    Make sure you do not delete the following line. If you would like to
-    use Manhattan distances instead of maze distances in order to save
-    on initialization time, please take a look at
-    CaptureAgent.registerInitialState in captureAgents.py.
-    '''
-    CaptureAgent.registerInitialState(self, gameState)
+        if wallCount == 3:
+            return -9999
 
-    '''
-    Your initialization code goes here, if you need any.
-    '''
+        actions = successor.getLegalActions(self.index)
+        return 0.9 * max([self.depthLimitedSearchToHome(successor, action, depth + 1) for action in actions])
 
+    def getSuccessor(self, gameState, action):
+        # 현재 상태에서 특정한 액션을 취했을 때 다음 상태를 생성
+        successor = gameState.generateSuccessor(self.index, action)
+        return successor
+    
 
-  def chooseAction(self, gameState):
-    """
-    Picks among actions randomly.
-    """
-    actions = gameState.getLegalActions(self.index)
+class DefensiveReflexAgent(CaptureAgent):
+    def registerInitialState(self, gameState):
+        self.start = gameState.getAgentPosition(self.index)
+        CaptureAgent.registerInitialState(self, gameState)
 
-    '''
-    You should change this in your own agent.
-    '''
+        # 자신의 팀 영역의 경계가 되는 X 좌표 계산
+        self.boundaryX = (gameState.data.layout.width - 2) // 2
 
-    return random.choice(actions)
+        if not self.red:
+            self.boundaryX += 1
 
+        # 자신의 팀 영역의 경계가 되는 모든 좌표 계산
+        self.boundaries = []
+        for i in range(gameState.data.layout.height):
+            if not gameState.hasWall(self.boundaryX, i):
+                self.boundaries.append((self.boundaryX, i))
+
+    def chooseAction(self, gameState):
+        actions = gameState.getLegalActions(self.index)
+
+        # 현재 위치에서 가능한 액션들의 가치를 계산
+        values = [self.evaluate(gameState, action) for action in actions]
+
+        # 가장 큰 가치를 가진 액션들 중에서 랜덤하게 선택
+        maxValue = max(values)
+        bestActions = [action for action, value in zip(actions, values) if value == maxValue]
+
+        return random.choice(bestActions)
+
+    def getSuccessor(self, gameState, action):
+        # 현재 상태에서 특정한 액션을 취했을 때 다음 상태를 생성
+        successor = gameState.generateSuccessor(self.index, action)
+        return successor
+
+    def evaluate(self, gameState, action):
+        # 어떤 액션의 가치를 feature * weights의 linear combination으로 계산
+        features = self.getFeatures(gameState, action)
+        weights = self.getWeights(gameState, action)
+        return features * weights
+
+    def getFeatures(self, gameState, action):
+        features = util.Counter()
+        successor = self.getSuccessor(gameState, action)
+
+        myState = successor.getAgentState(self.index)
+        myPos = myState.getPosition()
+
+        # 액션을 하고 난 후의 invader의 수
+        enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
+        invaders = [enemy for enemy in enemies if enemy.isPacman and enemy.getPosition() != None]
+        features["numInvaders"] = len(invaders)
+
+        # 액션을 취했을 때 경계선을 넘어가는지 여부
+        if myPos[0] > self.boundaryX or myPos == self.start:
+            features["isPacman"] = 1
+
+        # 액션을 취하고 난 후 invader가 존재한다면 가장 가까운 invader 까지의 거리
+        if len(invaders) > 0:
+            dists = [self.getMazeDistance(myPos, a.getPosition()) for a in invaders]
+            features['invaderDistance'] = min(dists)
+
+        # 액션을 취하고 난 후 invader가 없고, 경계로 부터 멀리 떨어져 있을 경우 가장 가까운 경계까지의 거리
+        elif abs(myPos[0] - self.boundaryX) > 4:
+            features['nearBoundary'] = min([self.getMazeDistance(myPos, boundary) for boundary in self.boundaries])
+
+        return features
+
+    def getWeights(self, gameState, action):
+        # invader의 수/ invader까지의 거리 / boundary까지의 거리는 작을수록 좋으므로 음의 weight
+        # 경계를 넘어갈 경우 패널티를 부여
+        return {'numInvaders': -1000, 'isPacman': -10, 'invaderDistance': -10, 'nearBoundary': -10}
