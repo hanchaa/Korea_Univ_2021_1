@@ -152,8 +152,8 @@ class DefensiveReflexAgent(ReflexCaptureAgent):
         features["numInvaders"] = len(invaders)
 
         # 액션을 취했을 때 경계선을 넘어가는지 여부
-        if myPos[0] > self.boundaryX or myPos == self.start:
-            features["isPacman"] = 1
+        if myState.isPacman or myPos == self.start:
+            features["crossBoundary"] = 1
 
         # 액션을 취하고 난 후 invader가 존재한다면 가장 가까운 invader 까지의 거리
         if len(invaders) > 0:
@@ -169,4 +169,4 @@ class DefensiveReflexAgent(ReflexCaptureAgent):
     def getWeights(self):
         # invader의 수/ invader까지의 거리 / boundary까지의 거리는 작을수록 좋으므로 음의 weight
         # 경계를 넘어갈 경우 패널티를 부여
-        return {'numInvaders': -1000, 'isPacman': -10, 'invaderDistance': -10, 'nearBoundary': -10}
+        return {'numInvaders': -1000, 'crossBoundary': -10, 'invaderDistance': -10, 'nearBoundary': -10}
