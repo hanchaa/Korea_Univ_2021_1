@@ -86,7 +86,7 @@ class ReflexCaptureAgent(CaptureAgent):
     def evaluate(self, gameState, action):
         # 어떤 액션의 가치를 feature * weights의 linear combination으로 계산
         features = self.getFeatures(gameState, action)
-        weights = self.getWeights(gameState, action)
+        weights = self.getWeights()
         return features * weights
 
     def getFeatures(self, gameState, action):
@@ -95,7 +95,7 @@ class ReflexCaptureAgent(CaptureAgent):
         features['successorScore'] = self.getScore(successor)
         return features
 
-    def getWeights(self, gameState, action):
+    def getWeights(self):
         return {'successorScore': 1.0}
 
 
@@ -132,7 +132,7 @@ class PessimisticReflexAgent(ReflexCaptureAgent):
 
         return features
 
-    def getWeights(self, gameState, action):
+    def getWeights(self):
         # foodLeft / distToFood / distToHome은 작을수록 좋으므로 음수
         # distToGhost는 feature가 이미 반비례 관계이므로 적당한 weight만 적용
         return {'foodLeft': -100, 'distToFood': -1, 'distToGhost': 15, 'distToHome': -1}
@@ -166,7 +166,7 @@ class DefensiveReflexAgent(ReflexCaptureAgent):
 
         return features
 
-    def getWeights(self, gameState, action):
+    def getWeights(self):
         # invader의 수/ invader까지의 거리 / boundary까지의 거리는 작을수록 좋으므로 음의 weight
         # 경계를 넘어갈 경우 패널티를 부여
         return {'numInvaders': -1000, 'isPacman': -10, 'invaderDistance': -10, 'nearBoundary': -10}
