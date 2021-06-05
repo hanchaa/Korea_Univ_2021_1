@@ -120,7 +120,7 @@ class PlanningAgent(CaptureAgent):
         enemyDistance = min(
             [self.getMazeDistance(agentState.getPosition(), enemy.getPosition()) for enemy in enemies])
 
-        if enemyDistance <= depth:
+        if enemyDistance <= depth or pos == self.start:
             return -9999
 
         wallCount = 0
