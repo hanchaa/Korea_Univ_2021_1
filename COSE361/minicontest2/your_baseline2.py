@@ -89,7 +89,7 @@ class PlanningAgent(CaptureAgent):
         if depth >= 4:
             return -min([self.getMazeDistance(pos, food) for food in foodList])
 
-        if agentState.getPosition() == self.start:
+        if pos == self.start:
             return -9999
 
         if agentState.isPacman:
@@ -179,7 +179,7 @@ class DefensiveReflexAgent(CaptureAgent):
     def evaluate(self, gameState, action):
         # 어떤 액션의 가치를 feature * weights의 linear combination으로 계산
         features = self.getFeatures(gameState, action)
-        weights = self.getWeights(gameState, action)
+        weights = self.getWeights()
         return features * weights
 
     def getFeatures(self, gameState, action):
@@ -194,22 +194,39 @@ class DefensiveReflexAgent(CaptureAgent):
         invaders = [enemy for enemy in enemies if enemy.isPacman and enemy.getPosition() != None]
         features["numInvaders"] = len(invaders)
 
-        # 액션을 취했을 때 경계선을 넘어가는지 여부
-        if myPos[0] > self.boundaryX or myPos == self.start:
-            features["isPacman"] = 1
-
         # 액션을 취하고 난 후 invader가 존재한다면 가장 가까운 invader 까지의 거리
         if len(invaders) > 0:
             dists = [self.getMazeDistance(myPos, a.getPosition()) for a in invaders]
             features['invaderDistance'] = min(dists)
 
         # 액션을 취하고 난 후 invader가 없고, 경계로 부터 멀리 떨어져 있을 경우 가장 가까운 경계까지의 거리
-        elif abs(myPos[0] - self.boundaryX) > 4:
-            features['nearBoundary'] = min([self.getMazeDistance(myPos, boundary) for boundary in self.boundaries])
+        else:
+            if abs(myPos[0] - self.boundaryX) > 3:
+                features['nearBoundary'] = min([self.getMazeDistance(myPos, boundary) for boundary in self.boundaries])
+            # 만약 경계로 부터 일정 범위 내에 있다면 상대편 진영 쪽에 있는 것이 더 가치가 큼
+            # 공격 에이전트가 경계에서 상대 에이전트에 의해 붙잡혀있다면 상대방 에이전트를 수비 에이전트 쪽으로 불러내기 위함
+            else:
+                if self.red:
+                    features['nearBoundary'] = self.boundaryX - myPos[0] - 2
+                else:
+                    features['nearBoundary'] = myPos[0] - self.boundaryX - 2
+                features['nearBoundary'] = max(features['nearBoundary'], -3)
+
+        # 상대방 에이전트를 유도하기 위해 상대편 진영에 나가 있을 경우
+        # 귀신이 가까운 거리로 오게 되는 행동은 하지 않도록 패널티를 부여
+        if myState.isPacman:
+            enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
+            ghosts = [enemy for enemy in enemies if
+                      not enemy.isPacman and enemy.getPosition() is not None and enemy.scaredTimer == 0]
+
+            if len(ghosts) > 0:
+                dists = [self.getMazeDistance(myPos, ghost.getPosition()) for ghost in ghosts]
+                if min(dists) <= 3:
+                    features['nearGhost'] = 1
 
         return features
 
-    def getWeights(self, gameState, action):
+    def getWeights(self):
         # invader의 수/ invader까지의 거리 / boundary까지의 거리는 작을수록 좋으므로 음의 weight
         # 경계를 넘어갈 경우 패널티를 부여
-        return {'numInvaders': -1000, 'isPacman': -10, 'invaderDistance': -10, 'nearBoundary': -10}
+        return {'numInvaders': -1000, 'invaderDistance': -10, 'nearBoundary': -10, 'nearGhost': -9999}
