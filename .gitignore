@@ -131,3 +131,5 @@ dmypy.json
 *.ini
 **/.idea/
 **/.vscode/
+
+COSE361/minicontest2/2019320016.py
