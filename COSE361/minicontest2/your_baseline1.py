@@ -104,9 +104,10 @@ class PessimisticReflexAgent(ReflexCaptureAgent):
         features = util.Counter()
         successor = self.getSuccessor(gameState, action)
 
-        myPos = successor.getAgentState(self.index).getPosition()
+        myState = successor.getAgentState(self.index)
+        myPos = myState.getPosition()
 
-        # 하나라도 food를 먹은 상태라면은 집으로 돌아오도록 feature를 설정
+        # 하나라도 food를 먹은 상태라면 집으로 돌아오도록 feature를 설정
         if gameState.getAgentState(self.index).numCarrying >= 1:
             features['distToHome'] = min([self.getMazeDistance(myPos, boundary) for boundary in self.boundaries])
 
@@ -129,6 +130,10 @@ class PessimisticReflexAgent(ReflexCaptureAgent):
             dists = [self.getMazeDistance(myPos, ghost.getPosition()) for ghost in ghosts]
             # 가장 가까운 ghost까지의 거리가 멀 때는 큰 영향을 끼치지 않지만 가까워질수록 그 영향이 커지도록 반비례 관계
             features['distToGhost'] = -1 / min(dists)
+
+            # 어떤 행동의 결과 고스트에게 잡혀 원래 위치로 돌아가게 된다면 그 방향으로 가지 않게 큰 패널티를 줌
+            if myPos == self.start:
+                features['distanceToGhost'] = -9999
 
         return features
 
