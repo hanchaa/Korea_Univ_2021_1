@@ -110,7 +110,7 @@ class CooperativeAgent(CaptureAgent):
         myPos = myState.getPosition()
 
         # 현재 먹은 food가 2개 이상이라면 팀 영역으로 돌아가 점수 올리도록 feature 설정
-        if gameState.getAgentState(self.index).numCarrying >= 2:
+        if gameState.getAgentState(self.index).numCarrying >= 3:
             features['distToHome'] = min([self.getMazeDistance(myPos, boundary) for boundary in self.boundaries])
 
         else:
@@ -134,13 +134,13 @@ class CooperativeAgent(CaptureAgent):
                   not enemy.isPacman and enemy.getPosition() is not None and enemy.scaredTimer == 0]
 
         if len(ghosts) > 0:
-            dists = [self.getMazeDistance(myPos, ghost.getPosition()) for ghost in ghosts]
+            ghostsDist = [self.getMazeDistance(myPos, ghost.getPosition()) for ghost in ghosts]
             # 가장 가까운 ghost까지의 거리가 멀 때는 큰 영향을 끼치지 않지만 가까워질수록 그 영향이 커지도록 반비례 관계
-            features['distToGhost'] = -1 / min(dists)
+            features['distToGhost'] = 1 / min(ghostsDist)
 
             # 어떤 행동의 결과 고스트에게 잡혀 원래 위치로 돌아가게 된다면 그 방향으로 가지 않게 큰 패널티를 줌
             if myPos == self.start:
-                features['distanceToGhost'] = -9999
+                features['distanceToGhost'] = 9999
 
             # food가 있는 곳이 3면이 막힌 터널이고, 고스트가 3번의 이동 안에 도착할 수 있으면
             # 그 터널 속 food는 먹지 않도록 feature 설정
@@ -151,10 +151,10 @@ class CooperativeAgent(CaptureAgent):
                 if successor.hasWall(int(myPos[0]), int(myPos[1] + i)):
                     wallCount += 1
 
-            if wallCount == 3 and min(dists) <= 3:
+            if wallCount == 3 and min(ghostsDist) <= 3:
                 features['isTunnel'] = 1
 
-        # 아직 2개 이상 food를 carry하지 않고 있더라도 고스트를 피해 도망다니던 중 영역 경계에 도달하면
+        # 아직 3개 이상 food를 carry하지 않고 있더라도 고스트를 피해 도망다니던 중 영역 경계에 도달하면
         # 팀 영역으로 들어가 점수를 올리도록 feature 설정
         features['successorScore'] = self.getScore(successor)
 
@@ -163,7 +163,7 @@ class CooperativeAgent(CaptureAgent):
     def getOffensiveWeights(self):
         # 터널인 경우 foodLeft가 -1 돼서 전체적으로 +100 되는 것을 상쇄시키고
         # 그것보다 더 패널티를 주어야 하므로 -100 보다 더 작게 weight 설정
-        return {'foodLeft': -100, 'distToHome': -1, 'distToFood': -1, 'distToGhost': 15, 'isTunnel': -110, 'successorScore': 10}
+        return {'foodLeft': -100, 'distToHome': -1, 'distToFood': -1, 'distToGhost': -15, 'isTunnel': -110, 'successorScore': 10}
 
     def getDefensiveFeatures(self, gameState, action):
         features = util.Counter()
