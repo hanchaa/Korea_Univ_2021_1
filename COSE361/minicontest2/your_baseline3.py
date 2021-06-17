@@ -86,16 +86,19 @@ class CooperativeAgent(CaptureAgent):
         return successor
 
     def evaluate(self, gameState, action):
+        # 에이전트에 따라 방어하는 food의 개수가 15개 또는 10개 이하가 되면 수비 모드로 전환
+        leftFood = 10 if self.index == self.getTeam(gameState)[0] else 15
+
+        # 현재 우리 팀의 food가 일정 개수 이하가 된다면 팀 영역으로 돌아와 수비 모드로 전환
+        if len(self.getFoodYouAreDefending(gameState).asList()) < leftFood:
+            features = self.getDefensiveFeatures(gameState, action)
+            weights = self.getDefensiveWeights()
+
         # 현재 우리 팀의 food가 15개 넘게 남아 있다면 상대편 진영에서 food를 모음
-        if len(self.getFoodYouAreDefending(gameState).asList()) > 15:
+        else:
             # 어떤 액션의 가치를 feature * weights의 linear combination으로 계산
             features = self.getOffensiveFeatures(gameState, action)
             weights = self.getOffensiveWeights()
-
-        # 현재 우리 팀의 food가 15개 이하가 된다면 팀 영역으로 돌아와 수비 모드로 전환
-        else:
-            features = self.getDefensiveFeatures(gameState, action)
-            weights = self.getDefensiveWeights()
 
         return features * weights
 
