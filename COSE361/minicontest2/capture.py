@@ -775,7 +775,7 @@ def readCommand(argv, blue_team):
   parser = OptionParser(usageStr)
 
   parser.add_option('-r', '--red', help=default('Red team'),
-                    default='your_best.py')
+                    default='2019320016.py')
   parser.add_option('-b', '--blue', help=default('Blue team'),
                     default=blue_team)
   parser.add_option('--red-name', help=default('Red team name'),
