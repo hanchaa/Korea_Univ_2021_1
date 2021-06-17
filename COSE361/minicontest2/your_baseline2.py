@@ -94,9 +94,10 @@ class OffensivePlanningAgent(CaptureAgent):
 
         if agentState.isPacman:
             enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
+            # scared timer가 0인 ghost가 없어서 자신을 잡을 수 있는 enemy가 없다면 enemyDistance는 inf로 설정해 search를 계속 진행
             enemyDistance = min([self.getMazeDistance(agentState.getPosition(), enemy.getPosition()) for enemy in enemies if enemy.scaredTimer == 0], default=9999)
 
-            if enemyDistance <= depth:
+            if enemyDistance <= depth or pos == self.start:
                 return -9999
 
         if agentState.numCarrying > 0:
@@ -113,12 +114,12 @@ class OffensivePlanningAgent(CaptureAgent):
         if depth >= 4:
             return -min([self.getMazeDistance(pos, boundary) for boundary in self.boundaries])
 
-        if not agentState.isPacman:
+        if self.getScore(successor) - self.getScore(gameState) > 0:
             return 100
 
         enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
-        enemyDistance = min(
-            [self.getMazeDistance(agentState.getPosition(), enemy.getPosition()) for enemy in enemies])
+        # scared timer가 0인 ghost가 없어서 자신을 잡을 수 있는 enemy가 없다면 enemyDistance는 inf로 설정해 search를 계속 진행
+        enemyDistance = min([self.getMazeDistance(agentState.getPosition(), enemy.getPosition()) for enemy in enemies if enemy.scaredTimer == 0], default=9999)
 
         if enemyDistance <= depth or pos == self.start:
             return -9999
@@ -201,16 +202,15 @@ class DefensiveReflexAgent(CaptureAgent):
 
         # 액션을 취하고 난 후 invader가 없고, 경계로 부터 멀리 떨어져 있을 경우 가장 가까운 경계까지의 거리
         else:
-            if abs(myPos[0] - self.boundaryX) > 3:
+            deltaXCoord = self.boundaryX - myPos[0] if self.red else myPos[0] - self.boundaryX
+            if deltaXCoord >= 0:
                 features['nearBoundary'] = min([self.getMazeDistance(myPos, boundary) for boundary in self.boundaries])
-            # 만약 경계로 부터 일정 범위 내에 있다면 상대편 진영 쪽에 있는 것이 더 가치가 큼
-            # 공격 에이전트가 경계에서 상대 에이전트에 의해 붙잡혀있다면 상대방 에이전트를 수비 에이전트 쪽으로 불러내기 위함
+            # invader가 없다면 상대편 진영 쪽에 있는 것이 더 가치가 큼
+            # 공격 에이전트가 경계부근에서 상대 에이전트에 의해 붙잡혀있다면 상대방 에이전트를 수비 에이전트 쪽으로 불러내기 위함
             else:
-                if self.red:
-                    features['nearBoundary'] = self.boundaryX - myPos[0] - 2
-                else:
-                    features['nearBoundary'] = myPos[0] - self.boundaryX - 2
-                features['nearBoundary'] = max(features['nearBoundary'], -3)
+                # 경계로 부터 가로 3칸 만큼의 상대편 영역은 가치가 같게 함
+                if deltaXCoord >= -3:
+                    features['nearBoundary'] = -1
 
         # 상대방 에이전트를 유도하기 위해 상대편 진영에 나가 있을 경우
         # 귀신이 가까운 거리로 오게 되는 행동은 하지 않도록 패널티를 부여
@@ -222,11 +222,11 @@ class DefensiveReflexAgent(CaptureAgent):
             if len(ghosts) > 0:
                 dists = [self.getMazeDistance(myPos, ghost.getPosition()) for ghost in ghosts]
                 if min(dists) <= 3:
-                    features['nearGhost'] = 1
+                    features['nearGhost'] = min(dists)
 
         return features
 
     def getWeights(self):
         # invader의 수/ invader까지의 거리 / boundary까지의 거리는 작을수록 좋으므로 음의 weight
         # 경계를 넘어갈 경우 패널티를 부여
-        return {'numInvaders': -100, 'invaderDistance': -1, 'nearBoundary': -1, 'nearGhost': -9999}
+        return {'numInvaders': -100, 'invaderDistance': -1, 'nearBoundary': -1, 'nearGhost': -1000}
