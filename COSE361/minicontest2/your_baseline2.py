@@ -229,4 +229,4 @@ class DefensiveReflexAgent(CaptureAgent):
     def getWeights(self):
         # invader의 수/ invader까지의 거리 / boundary까지의 거리는 작을수록 좋으므로 음의 weight
         # 경계를 넘어갈 경우 패널티를 부여
-        return {'numInvaders': -1000, 'invaderDistance': -10, 'nearBoundary': -10, 'nearGhost': -9999}
+        return {'numInvaders': -100, 'invaderDistance': -1, 'nearBoundary': -1, 'nearGhost': -9999}
