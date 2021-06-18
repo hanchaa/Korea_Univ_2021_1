@@ -166,6 +166,10 @@ class CooperativeAgent(CaptureAgent):
         return {'foodLeft': -100, 'distToHome': -1, 'distToFood': -1, 'distToGhost': -15, 'isTunnel': -110, 'successorScore': 10}
 
     def getDefensiveFeatures(self, gameState, action):
+        # 공격 모드일 때 목표했던 가장 가까운 food 목표 해제
+        if self.index in self.currentGoals:
+            del self.currentGoals[self.index]
+
         features = util.Counter()
         successor = self.getSuccessor(gameState, action)
 
@@ -184,9 +188,8 @@ class CooperativeAgent(CaptureAgent):
 
         # 액션을 취하고 난 후 invader가 없고, 경계로 부터 멀리 떨어져 있을 경우 가장 가까운 경계까지의 거리
         else:
-            if self.red and (myPos[0] <= self.boundaryX - 4 or myPos[0] > self.boundaryX):
-                features['nearBoundary'] = min([self.getMazeDistance(myPos, boundary) for boundary in self.boundaries])
-            elif not self.red and (myPos[0] >= self.boundaryX + 4 or myPos[0] < self.boundaryX):
+            deltaXCoord = self.boundaryX - myPos[0] if self.red else myPos[0] - self.boundaryX
+            if deltaXCoord >= 4 or deltaXCoord < 0:
                 features['nearBoundary'] = min([self.getMazeDistance(myPos, boundary) for boundary in self.boundaries])
 
         # food를 모으던 중 수비 모드로 전환되어서 팀 영역으로 돌아갈 때 고스트가 일정 거리 안으로 들어오는 방향으로
@@ -204,5 +207,5 @@ class CooperativeAgent(CaptureAgent):
     def getDefensiveWeights(self):
         # invader의 수/ invader까지의 거리 / boundary까지의 거리는 작을수록 좋으므로 음의 weight
         # 고스트의 주변으로 가지 않도록 nearGhost는 -infinity
-        return {'numInvaders': -1000, 'invaderDistance': -10, 'nearBoundary': -10, 'nearGhost': -9999}
+        return {'numInvaders': -100, 'invaderDistance': -1, 'nearBoundary': -1, 'nearGhost': -9999}
 
